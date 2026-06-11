@@ -170,8 +170,51 @@ const server = http.createServer((req, res) => {
   if (req.method === "GET" && req.url === "/api/health") {
     sendJson(res, 200, {
       ok: true,
-      service: "ip-lora-gpt-lib-toolkit"
+      service: "ip-lora-gpt-lib-toolkit",
+      envCheck: {
+        LIBLIB_ACCESS_KEY: !!process.env.LIBLIB_ACCESS_KEY,
+        LIBLIB_SECRET_KEY: !!process.env.LIBLIB_SECRET_KEY,
+        OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
+        OPENAI_BASE_URL: process.env.OPENAI_BASE_URL || "(未设置)",
+        OPENAI_IMAGE_MODEL: process.env.OPENAI_IMAGE_MODEL || "(默认 gpt-image2)"
+      }
     });
+    return;
+  }
+
+  // 调试接口：测试 OpenAI 连通性
+  if (req.method === "POST" && req.url === "/api/debug/openai") {
+    (async () => {
+      try {
+        if (!process.env.OPENAI_API_KEY) {
+          return sendJson(res, 200, { error: "OPENAI_API_KEY 未配置" });
+        }
+        const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
+        const t0 = Date.now();
+        const response = await fetch(`${baseUrl}/images/generations`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: process.env.OPENAI_IMAGE_MODEL || "gpt-image2",
+            prompt: "a cute red shopping bag character, simple test",
+            size: process.env.OPENAI_IMAGE_SIZE || "1024x1024",
+            n: 1
+          })
+        });
+        const data = await response.json();
+        sendJson(res, 200, {
+          status: response.status,
+          ok: response.ok,
+          timeMs: Date.now() - t0,
+          result: data
+        });
+      } catch (error) {
+        sendJson(res, 200, { error: error.message });
+      }
+    })();
     return;
   }
 
