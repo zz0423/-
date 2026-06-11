@@ -105,8 +105,18 @@ function buildResult({ prompt, count, methodLink, remoteResult }) {
 }
 
 function getLinkStatusText(methodLink, remoteResult) {
-  if (!methodLink) {
+  if (!methodLink && currentMethod !== "gpt") {
     return "<p>调用入口：尚未配置真实链接，当前为本地预览结果。</p>";
+  }
+
+  if (!methodLink && currentMethod === "gpt") {
+    if (remoteResult?.ok) {
+      return "<p>调用入口：GPT 工作流，已完成接口调用。</p>";
+    }
+    if (remoteResult?.error) {
+      return `<p>调用入口：GPT 工作流。调用失败：${remoteResult.error}</p>`;
+    }
+    return "<p>调用入口：GPT 工作流，直接调用 OpenAI 图像接口。</p>";
   }
 
   if (remoteResult?.ok) {
