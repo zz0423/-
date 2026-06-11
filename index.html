@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IP 品牌生成工具导航</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <img class="brand-mark" src="assets/hero-bag.png" alt="抖音商城品牌 IP" />
+        <div class="hero-copy">
+          <p class="eyebrow">BRAND IP TOOLKIT</p>
+          <h1>IP 品牌生成工具导航</h1>
+          <p class="hero-subtitle">选择需要的方法，快速调用 LoRA 模型、GPT 工作流与 Lib 风格模版生成品牌 IP。</p>
+        </div>
+        <button class="ghost-button" id="resetButton" type="button" title="清空当前表单">
+          <span aria-hidden="true">↺</span>
+          重置
+        </button>
+      </section>
+
+      <section class="tool-grid" aria-label="IP 生成方法">
+        <article class="tool-card active" data-method="lora" tabindex="0">
+          <div class="card-visual lora-visual">
+            <span class="tool-index">01</span>
+            <img class="tool-image" src="assets/lora.png" alt="LoRA 模型生成配图" />
+          </div>
+          <div class="card-copy">
+            <p>MODEL GENERATOR</p>
+            <h2>LoRA 模型生成工具</h2>
+            <strong>ip-lora-model-link</strong>
+          </div>
+        </article>
+
+        <article class="tool-card" data-method="gpt" tabindex="0">
+          <div class="card-visual gpt-visual">
+            <span class="tool-index">02</span>
+            <img class="tool-image" src="assets/gpt.png" alt="GPT 工作流生成配图" />
+          </div>
+          <div class="card-copy">
+            <p>WORKFLOW BUILDER</p>
+            <h2>GPT 工作流生成工具</h2>
+            <strong>ip-gpt-workflow-link</strong>
+          </div>
+        </article>
+
+        <article class="tool-card" data-method="lib" tabindex="0">
+          <div class="card-visual lib-visual">
+            <span class="tool-index">03</span>
+            <img class="tool-image" src="assets/lib.png" alt="Lib 风格模版生成配图" />
+          </div>
+          <div class="card-copy">
+            <p>STYLE TEMPLATE</p>
+            <h2>Lib 风格模版生成工具</h2>
+            <strong>ip-lib-style-template</strong>
+          </div>
+        </article>
+      </section>
+
+      <section class="workbench" aria-label="生成工作台">
+        <form id="generatorForm" class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">CURRENT TOOL</p>
+              <h2 id="selectedMethodTitle">LoRA 模型生成工具</h2>
+            </div>
+            <span class="status-pill" id="statusPill">待配置</span>
+          </div>
+
+          <label class="field">
+            <span>风格与关键词</span>
+            <textarea id="promptInput" name="prompt" rows="5" placeholder="例如：可爱但不幼稚、潮牌感、适合表情包、主色为红黑白"></textarea>
+          </label>
+
+          <div class="settings-grid compact-settings">
+            <label class="field">
+              <span>输出数量</span>
+              <input id="countInput" name="count" type="number" min="1" max="12" value="4" />
+            </label>
+          </div>
+
+          <div class="link-panel">
+            <label class="field">
+              <span id="linkLabel">LoRA 模型链接</span>
+              <input id="methodLinkInput" name="methodLink" type="url" placeholder="粘贴对应方法链接" />
+            </label>
+            <button class="secondary-button" id="saveLinkButton" type="button">保存链接</button>
+          </div>
+
+          <button class="primary-button" type="submit">生成 IP 方案</button>
+        </form>
+
+        <aside class="result-panel" aria-live="polite">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">PREVIEW</p>
+              <h2>生成结果</h2>
+            </div>
+            <span class="status-pill success" id="methodBadge">LoRA</span>
+          </div>
+          <div id="resultEmpty" class="empty-state">
+            <div class="preview-mark" aria-hidden="true">IP</div>
+            <p>填写风格关键词并点击生成后，这里会显示请求摘要、生成文案与图片占位预览。</p>
+          </div>
+          <div id="resultContent" class="result-content hidden"></div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

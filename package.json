@@ -1,0 +1,12 @@
+{
+  "name": "ip-lora-gpt-lib-toolkit",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check script.js && node --check liblibClient.js && node --check openaiImageClient.js && node --check loraModelSkill.js && node --check libStyleSkill.js && node --check ipSkinSkill.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
