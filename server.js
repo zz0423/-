@@ -182,8 +182,8 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 调试接口：测试 OpenAI 连通性
-  if (req.method === "POST" && req.url === "/api/debug/openai") {
+  // 调试接口：测试 OpenAI 连通性（GET 和 POST 都支持）
+  if (req.url === "/api/debug/openai" && (req.method === "GET" || req.method === "POST")) {
     (async () => {
       try {
         if (!process.env.OPENAI_API_KEY) {
