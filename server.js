@@ -64,10 +64,60 @@ async function handleGenerate(req, res) {
 
     if (body.method === "gpt") {
       const skinResult = generateIpSkin(body.input || {});
-      const imageResult = await generateGptImage({
-        prompt: skinResult.plan.positivePrompt,
-        count: body.input?.count
-      });
+
+      // 把源图 dataUrl 拆成 base64（去掉 "data:image/png;base64," 前缀）
+      let sourceImageBase64 = null;
+      if (skinResult.source?.dataUrl) {
+        const dataUrl = skinResult.source.dataUrl;
+        const commaIdx = dataUrl.indexOf(",");
+        sourceImageBase64 = commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+      }
+
+      // 用 image edit 端点，把源图作为 image 输入；这是保留 IP 身份的关键
+      const requestedCount = Math.max(1, Number(body.input?.count) || 1);
+      const imageSize = body.input?.size || process.env.OPENAI_IMAGE_SIZE || "1024x1024";
+
+      let imageResult;
+      if (sourceImageBase64) {
+        // /images/edits 端点一次只输出 1 张；要 N 张就循环
+        const collected = [];
+        const errors = [];
+        for (let i = 0; i < requestedCount; i++) {
+          const single = await generateGptImageEdit({
+            prompt: skinResult.plan.positivePrompt,
+            sourceImageBase64,
+            size: imageSize,
+            count: 1
+          });
+          if (single.ok) {
+            collected.push(...(single.images || []));
+          } else {
+            errors.push(single.message || "image edit 失败");
+            // 第一次失败就 break，避免继续消耗配额
+            break;
+          }
+        }
+        imageResult = {
+          ok: collected.length > 0,
+          mode: "image_edit",
+          model: process.env.OPENAI_IMAGE_MODEL || "gpt-image-2",
+          size: imageSize,
+          images: collected,
+          message: collected.length > 0
+            ? `基于源图 ${skinResult.source.file} 生成 ${collected.length} 张图（image edit 模式）`
+            : `image edit 失败：${errors.join("; ")}`,
+          partial: collected.length > 0 && collected.length < requestedCount
+        };
+      } else {
+        // 没有源图时回退到纯文生图
+        imageResult = await generateGptImage({
+          prompt: skinResult.plan.positivePrompt,
+          count: requestedCount
+        });
+        if (imageResult.ok) {
+          imageResult.message = "⚠️ 未匹配到源图，回退到纯文生图（IP 形象可能变形）";
+        }
+      }
 
       sendJson(res, 200, {
         ...skinResult,

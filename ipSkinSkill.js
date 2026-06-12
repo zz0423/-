@@ -150,6 +150,8 @@ function pickBestSource(prompt) {
 
 function buildPositivePrompt({ prompt, source, skin }) {
   return [
+    "TASK: Image edit on the provided Doudou source image. The source image is GROUND TRUTH — do NOT regenerate or reinterpret the character.",
+    "ACTION: Add a thematic skin (props, accessories, background, small textures) around/on the existing character. The character's body, face, eyes, handle, feet, logo, side tag must remain PIXEL-IDENTICAL to the source.",
     "Use the selected Doudou source image as the locked visual reference; do not redesign the character body, face, eyes, handle, feet, logo, or side tag.",
     "Preserve Doudou's exact face proportions, eye centers, eye spacing, eye height, eye protrusion depth, shopping-bag silhouette, handle position, feet position, and woven fabric side tag.",
     "Preserve the Douyin Mall front watermark/logo/text exactly as in the source image. Do not redraw, translate, stylize, blur, replace, or alter it.",
