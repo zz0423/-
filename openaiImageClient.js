@@ -44,7 +44,7 @@ async function generateGptImage({ prompt, count }) {
     };
   }
 
-  const model = process.env.OPENAI_IMAGE_MODEL || "gpt-image-1";
+  const model = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2";
   const size = process.env.OPENAI_IMAGE_SIZE || "1024x1024";
   const imageCount = Math.max(1, Math.min(Number(count) || 1, Number(process.env.OPENAI_IMAGE_MAX_COUNT || 4)));
   const response = await fetch(`${process.env.OPENAI_BASE_URL || "https://api.openai.com/v1"}/images/generations`, {

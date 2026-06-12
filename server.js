@@ -198,7 +198,7 @@ const server = http.createServer((req, res) => {
             Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
           },
           body: JSON.stringify({
-            model: process.env.OPENAI_IMAGE_MODEL || "gpt-image-1",
+            model: process.env.OPENAI_IMAGE_MODEL || "gpt-image-2",
             prompt: "a cute red shopping bag character, simple test",
             size: process.env.OPENAI_IMAGE_SIZE || "1024x1024",
             n: 1
