@@ -66,7 +66,6 @@
               <p class="eyebrow">CURRENT TOOL</p>
               <h2 id="selectedMethodTitle">LoRA 模型生成工具</h2>
             </div>
-            <span class="status-pill" id="statusPill">待配置</span>
           </div>
 
           <label class="field">
@@ -79,14 +78,6 @@
               <span>输出数量</span>
               <input id="countInput" name="count" type="number" min="1" max="12" value="4" />
             </label>
-          </div>
-
-          <div class="link-panel">
-            <label class="field">
-              <span id="linkLabel">LoRA 模型链接</span>
-              <input id="methodLinkInput" name="methodLink" type="url" placeholder="粘贴对应方法链接" />
-            </label>
-            <button class="secondary-button" id="saveLinkButton" type="button">保存链接</button>
           </div>
 
           <button class="primary-button" type="submit">生成 IP 方案</button>
@@ -102,7 +93,7 @@
           </div>
           <div id="resultEmpty" class="empty-state">
             <div class="preview-mark" aria-hidden="true">IP</div>
-            <p>填写风格关键词并点击生成后，这里会显示请求摘要、生成文案与图片占位预览。</p>
+            <p>填写风格关键词并点击生成后，生成的图会展示在这里。</p>
           </div>
           <div id="resultContent" class="result-content hidden"></div>
         </aside>
