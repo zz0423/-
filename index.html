@@ -100,6 +100,23 @@
       </section>
     </main>
 
+    <div id="imageLightbox" class="image-lightbox hidden" role="dialog" aria-modal="true" aria-label="图片预览">
+      <div class="lightbox-backdrop" data-lightbox-close></div>
+      <div class="lightbox-frame">
+        <img id="lightboxImage" alt="生成图预览" />
+        <div class="lightbox-actions">
+          <button id="lightboxDownload" class="lightbox-button primary" type="button">
+            <span aria-hidden="true">⬇</span>
+            <span>下载原图</span>
+          </button>
+          <button class="lightbox-button ghost" type="button" data-lightbox-close>
+            <span aria-hidden="true">✕</span>
+            <span>关闭</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script src="config.js"></script>
     <script src="script.js"></script>
   </body>

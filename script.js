@@ -83,14 +83,113 @@ function formatImageGallery(images) {
   }
   const imageItems = images
     .map((image, index) => {
+      const safeUrl = escapeHtml(image.imageUrl);
+      const downloadName = `doudou-skin-${Date.now()}-${index + 1}.png`;
+      const safeDownload = escapeHtml(downloadName);
       return `
         <figure class="generated-image">
-          <img src="${escapeHtml(image.imageUrl)}" alt="生成图 ${index + 1}" />
+          <button class="image-frame" type="button" data-lightbox-open="${safeUrl}" data-download-name="${safeDownload}" aria-label="放大查看 生成图 ${index + 1}">
+            <img src="${safeUrl}" alt="生成图 ${index + 1}" />
+            <span class="image-actions" aria-hidden="true">
+              <span class="image-action" data-action="zoom">⤢ 放大</span>
+              <span class="image-action" data-action="download">⬇ 下载</span>
+            </span>
+          </button>
         </figure>
       `;
     })
     .join("");
   return `<div class="generated-gallery">${imageItems}</div>`;
+}
+
+function setupLightbox() {
+  // 事件委托到 resultContent，HTML 重新渲染后无需重绑
+  if (resultContent.dataset.lightboxBound === "1") {
+    return;
+  }
+  resultContent.dataset.lightboxBound = "1";
+  resultContent.addEventListener("click", (event) => {
+    const frame = event.target.closest(".image-frame");
+    if (!frame) {
+      return;
+    }
+    const action = event.target.closest("[data-action]");
+    if (action?.dataset.action === "download") {
+      event.preventDefault();
+      event.stopPropagation();
+      triggerDownload(frame.dataset.lightboxOpen, frame.dataset.downloadName);
+      return;
+    }
+    openLightbox(frame.dataset.lightboxOpen, frame.dataset.downloadName);
+  });
+}
+
+function openLightbox(url, downloadName) {
+  if (!url) {
+    return;
+  }
+  const lightbox = document.querySelector("#imageLightbox");
+  const lightboxImage = document.querySelector("#lightboxImage");
+  const lightboxDownload = document.querySelector("#lightboxDownload");
+  if (!lightbox || !lightboxImage || !lightboxDownload) {
+    return;
+  }
+  lightboxImage.src = url;
+  lightboxImage.alt = downloadName ? `预览 ${downloadName}` : "生成图预览";
+  // 用闭包暂存当前 url/下载名，避免 lightbox 内状态污染
+  lightboxDownload.onclick = () => triggerDownload(url, downloadName);
+  lightbox.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+
+function closeLightbox() {
+  const lightbox = document.querySelector("#imageLightbox");
+  if (!lightbox) {
+    return;
+  }
+  lightbox.classList.add("hidden");
+  document.body.style.overflow = "";
+  const lightboxImage = document.querySelector("#lightboxImage");
+  if (lightboxImage) {
+    lightboxImage.src = "";
+  }
+}
+
+function triggerDownload(url, downloadName) {
+  if (!url) {
+    return;
+  }
+  // data URL 浏览器原生支持 <a download>，直接用最稳
+  if (url.startsWith("data:")) {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = downloadName || "doudou-skin.png";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    return;
+  }
+  // https URL：优先尝试 fetch + blob（避免被浏览器当页面打开），失败再降级
+  fetch(url)
+    .then((response) => (response.ok ? response.blob() : Promise.reject(new Error("fetch failed"))))
+    .then((blob) => {
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = downloadName || "doudou-skin.png";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    })
+    .catch(() => {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = downloadName || "doudou-skin.png";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    });
 }
 
 function formatRemoteResult(data) {
@@ -247,4 +346,15 @@ resetButton.addEventListener("click", () => {
   resultEmpty.classList.remove("hidden");
 });
 
+// lightbox 关闭交互
+document.querySelectorAll("[data-lightbox-close]").forEach((node) => {
+  node.addEventListener("click", closeLightbox);
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeLightbox();
+  }
+});
+
+setupLightbox();
 setMethod(currentMethod);
