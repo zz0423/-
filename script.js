@@ -193,10 +193,15 @@ function triggerDownload(url, downloadName) {
 }
 
 function formatRemoteResult(data) {
-  // 优先展示图
-  const gallery = formatImageGallery(data?.openaiImage?.images);
-  if (gallery) {
-    return gallery;
+  // 优先展示图：OpenAI image edit / generations
+  const openaiGallery = formatImageGallery(data?.openaiImage?.images);
+  if (openaiGallery) {
+    return openaiGallery;
+  }
+  // 其次展示 LoRA 完成后的图（LibLibAI status.images）
+  const loraGallery = formatImageGallery(data?.liblibApi?.status?.images);
+  if (loraGallery) {
+    return loraGallery;
   }
   // LoRA 还在轮询：显示 status
   if (data?.liblibApi?.status) {
@@ -214,13 +219,17 @@ function formatLoraApiStatus(liblibApi) {
   if (liblibApi.generateUuid) {
     const status = liblibApi.status;
     if (status?.generateStatus === 5) {
-      return `已完成，generateUuid: ${liblibApi.generateUuid}`;
+      // status=5 通常会附带 images；上层 formatRemoteResult 会优先渲染图，这里只是兜底
+      if (Array.isArray(status.images) && status.images.length > 0) {
+        return `已完成 ${status.images.length} 张`;
+      }
+      return `已完成，generateUuid: ${liblibApi.generateUuid}（未返回图，请检查 LibLibAI 配额）`;
     }
     if (status?.generateStatus === 6) {
-      return `生成失败，generateUuid: ${liblibApi.generateUuid}`;
+      return `生成失败：${status.generateMsg || "请稍后重试"}`;
     }
     if (status?.generateStatus === 7) {
-      return `生成超时，generateUuid: ${liblibApi.generateUuid}`;
+      return `生成超时：${status.generateMsg || "请稍后重试"}`;
     }
     const percent = status?.percentCompleted ? `，进度 ${Math.round(status.percentCompleted * 100)}%` : "";
     return `已提交 LibLibAI 任务，generateUuid: ${liblibApi.generateUuid}${percent}`;
