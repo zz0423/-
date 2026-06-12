@@ -28,6 +28,7 @@ const methods = {
 };
 
 let currentMethod = "lora";
+let skinSources = []; // 兜兜源图列表
 
 const methodCards = document.querySelectorAll(".tool-card");
 const selectedMethodTitle = document.querySelector("#selectedMethodTitle");
@@ -40,6 +41,10 @@ const generatorForm = document.querySelector("#generatorForm");
 const resetButton = document.querySelector("#resetButton");
 const resultEmpty = document.querySelector("#resultEmpty");
 const resultContent = document.querySelector("#resultContent");
+const sourcePickerField = document.querySelector("#sourcePickerField");
+const sourcePicker = document.querySelector("#sourcePicker");
+const sourcePreviewField = document.querySelector("#sourcePreviewField");
+const sourcePreview = document.querySelector("#sourcePreview");
 
 function getApiBaseUrl() {
   return (window.IP_TOOL_API_BASE_URL || "").replace(/\/+$/, "");
@@ -66,6 +71,16 @@ function setMethod(method) {
   linkLabel.textContent = config.linkLabel;
   methodLinkInput.value = getStoredLink(method);
   statusPill.textContent = methodLinkInput.value ? "已配置" : "待配置";
+
+  // GPT 方法才显示源图选择器
+  if (method === "gpt") {
+    sourcePickerField.hidden = false;
+    sourcePreviewField.hidden = false;
+    refreshSourcePreview();
+  } else {
+    sourcePickerField.hidden = true;
+    sourcePreviewField.hidden = true;
+  }
 }
 
 function saveCurrentLink() {
@@ -78,6 +93,42 @@ function saveCurrentLink() {
 
   localStorage.removeItem(methods[currentMethod].storageKey);
   statusPill.textContent = "待配置";
+}
+
+async function loadSkinSources() {
+  try {
+    const response = await fetch(apiUrl("/api/skin-assets"));
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    if (!data.ok || !Array.isArray(data.sources)) {
+      return;
+    }
+    skinSources = data.sources;
+
+    // 填入下拉框
+    sourcePicker.innerHTML = '<option value="">自动选择（按关键词匹配）</option>' +
+      skinSources
+        .map((item) => `<option value="${escapeHtml(item.file)}">${escapeHtml(item.file)} (${item.width}x${item.height})</option>`)
+        .join("");
+  } catch (error) {
+    console.warn("加载源图失败：", error.message);
+  }
+}
+
+function refreshSourcePreview() {
+  const selected = sourcePicker.value;
+  if (!selected) {
+    sourcePreview.src = "";
+    sourcePreview.alt = "未选择源图（将自动按关键词匹配）";
+    return;
+  }
+  const item = skinSources.find((s) => s.file === selected);
+  if (item) {
+    sourcePreview.src = item.url;
+    sourcePreview.alt = `兜兜源图 ${item.file}`;
+  }
 }
 
 function buildResult({ prompt, count, methodLink, remoteResult }) {
@@ -140,6 +191,61 @@ function escapeHtml(value) {
 }
 
 function formatRemoteResult(data) {
+  if (data?.type === "doudou-ip-skin-designer" && data.plan) {
+    const imageGallery = formatImageGallery(data.openaiImage?.images);
+    const sourceBlock = data.source ? `
+      <div class="skin-section">
+        <b>使用的源图</b>
+        <p>${escapeHtml(data.source.file)}（${data.source.width}x${data.source.height}）</p>
+        ${data.source.dataUrl ? `<img class="source-thumb" src="${escapeHtml(data.source.dataUrl)}" alt="${escapeHtml(data.source.file)}" />` : ""}
+      </div>
+    ` : "";
+
+    return `
+      <div class="skin-result">
+        <h4>${escapeHtml(data.plan.title)}</h4>
+        <p>${escapeHtml(data.plan.direction)}</p>
+        <div class="skin-meta">
+          <span>活动等级：${escapeHtml(data.plan.activityLevel || "常规")}</span>
+          <span>创意空间：${escapeHtml(data.plan.creativeSpace)}</span>
+          <span>${escapeHtml(data.plan.palette)}</span>
+        </div>
+        ${sourceBlock}
+        <div class="skin-section">
+          <b>身份锁定（不可改）</b>
+          <ul>${data.plan.lockedAreas.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+        </div>
+        <div class="skin-section">
+          <b>禁止项</b>
+          <ul>${data.plan.forbidden.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+        </div>
+        <div class="skin-section">
+          <b>可编辑区域</b>
+          <p>${escapeHtml(data.plan.editableAreas.join("、"))}</p>
+        </div>
+        <div class="skin-section">
+          <b>工作流</b>
+          <p>${escapeHtml(data.plan.workflow)}</p>
+        </div>
+        <div class="skin-section">
+          <b>生成提示词</b>
+          <p>${escapeHtml(data.plan.positivePrompt)}</p>
+        </div>
+        <div class="skin-section">
+          <b>负向提示词</b>
+          <p>${escapeHtml(data.plan.negativePrompt)}</p>
+        </div>
+        ${data.openaiImage ? `
+          <div class="skin-section">
+            <b>${data.openaiImage.ok ? "✅ 出图成功" : "❌ 出图失败"}</b>
+            <p>${escapeHtml(data.openaiImage.message || `使用模式：${data.openaiImage.mode || "text2img"}，模型：${data.openaiImage.model || "?"}`)}</p>
+          </div>
+        ` : ""}
+        ${imageGallery}
+      </div>
+    `;
+  }
+
   if (data?.type === "doudou-ip-skin-skill" && data.plan) {
     const imageGallery = formatImageGallery(data.openaiImage?.images);
 
@@ -315,7 +421,9 @@ async function callGenerator(payload) {
         url: payload.methodLink,
         input: {
           prompt: payload.prompt,
-          count: Number(payload.count) || 1
+          count: Number(payload.count) || 1,
+          size: "1024x1024",
+          sourceFile: payload.sourceFile || undefined
         }
       })
     });
@@ -355,6 +463,8 @@ saveLinkButton.addEventListener("click", saveCurrentLink);
 
 methodLinkInput.addEventListener("change", saveCurrentLink);
 
+sourcePicker.addEventListener("change", refreshSourcePreview);
+
 generatorForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   saveCurrentLink();
@@ -363,7 +473,8 @@ generatorForm.addEventListener("submit", async (event) => {
   const payload = {
     prompt: (formData.get("prompt") || "").trim(),
     count: formData.get("count"),
-    methodLink: (formData.get("methodLink") || "").trim()
+    methodLink: (formData.get("methodLink") || "").trim(),
+    sourceFile: (formData.get("sourceFile") || "").trim()
   };
 
   resultContent.innerHTML = `
@@ -417,3 +528,4 @@ resetButton.addEventListener("click", () => {
 });
 
 setMethod(currentMethod);
+loadSkinSources();

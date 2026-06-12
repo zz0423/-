@@ -79,6 +79,16 @@
               <span>输出数量</span>
               <input id="countInput" name="count" type="number" min="1" max="12" value="4" />
             </label>
+            <label class="field" id="sourcePickerField" hidden>
+              <span>选择兜兜源图（GPT 方法专用）</span>
+              <select id="sourcePicker" name="sourceFile">
+                <option value="">自动选择（按关键词匹配）</option>
+              </select>
+            </label>
+            <div class="field" id="sourcePreviewField" hidden>
+              <span>当前源图预览</span>
+              <img id="sourcePreview" class="source-preview" alt="兜兜源图预览" />
+            </div>
           </div>
 
           <div class="link-panel">

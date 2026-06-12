@@ -1,0 +1,5 @@
+interface:
+  display_name: "兜兜 IP 换肤设计"
+  short_description: "为兜兜卡通 IP 设计皮肤、联名和海报应用"
+  default_prompt: "Use $doudou-ip-skin-designer to design a seasonal, collaboration, or poster-ready skin concept for the Doudou cartoon IP."
+

@@ -3,9 +3,9 @@ const fs = require("fs");
 const path = require("path");
 const { generateLibStyle } = require("./libStyleSkill");
 const { generateLoraPackage } = require("./loraModelSkill");
-const { generateIpSkin } = require("./ipSkinSkill");
+const { generateIpSkin, listAvailableSources, getSourceBase64, getSourceDataUrl } = require("./ipSkinSkill");
 const { submitLoraText2Img, getGenerationStatus } = require("./liblibClient");
-const { generateGptImage } = require("./openaiImageClient");
+const { generateGptImage, generateGptImageEdit } = require("./openaiImageClient");
 
 const root = __dirname;
 const host = process.env.HOST || "0.0.0.0";
@@ -215,6 +215,30 @@ const server = http.createServer((req, res) => {
         sendJson(res, 200, { error: error.message });
       }
     })();
+    return;
+  }
+
+  if (req.method === "GET" && req.url === "/api/skin-assets") {
+    const sources = listAvailableSources();
+    // 不返回 dataUrl 字段（避免响应过大），让前端通过 /assets/skin-sources/xxx.png 自行加载预览
+    const lightSources = sources.map((item) => ({
+      file: item.file,
+      width: item.width,
+      height: item.height,
+      url: `/assets/skin-sources/${item.file}`
+    }));
+    sendJson(res, 200, { ok: true, count: lightSources.length, sources: lightSources });
+    return;
+  }
+
+  if (req.method === "GET" && req.url.startsWith("/api/skin-assets/preview/")) {
+    const filename = decodeURIComponent(req.url.replace("/api/skin-assets/preview/", ""));
+    const dataUrl = getSourceDataUrl(filename);
+    if (!dataUrl) {
+      sendJson(res, 404, { error: "源图不存在" });
+      return;
+    }
+    sendJson(res, 200, { ok: true, dataUrl });
     return;
   }
 
