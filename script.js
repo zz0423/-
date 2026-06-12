@@ -28,7 +28,6 @@ const methods = {
 };
 
 let currentMethod = "lora";
-let skinSources = []; // 兜兜源图列表
 
 const methodCards = document.querySelectorAll(".tool-card");
 const selectedMethodTitle = document.querySelector("#selectedMethodTitle");
@@ -41,10 +40,6 @@ const generatorForm = document.querySelector("#generatorForm");
 const resetButton = document.querySelector("#resetButton");
 const resultEmpty = document.querySelector("#resultEmpty");
 const resultContent = document.querySelector("#resultContent");
-const sourcePickerField = document.querySelector("#sourcePickerField");
-const sourcePicker = document.querySelector("#sourcePicker");
-const sourcePreviewField = document.querySelector("#sourcePreviewField");
-const sourcePreview = document.querySelector("#sourcePreview");
 
 function getApiBaseUrl() {
   return (window.IP_TOOL_API_BASE_URL || "").replace(/\/+$/, "");
@@ -71,16 +66,6 @@ function setMethod(method) {
   linkLabel.textContent = config.linkLabel;
   methodLinkInput.value = getStoredLink(method);
   statusPill.textContent = methodLinkInput.value ? "已配置" : "待配置";
-
-  // GPT 方法才显示源图选择器
-  if (method === "gpt") {
-    sourcePickerField.hidden = false;
-    sourcePreviewField.hidden = false;
-    refreshSourcePreview();
-  } else {
-    sourcePickerField.hidden = true;
-    sourcePreviewField.hidden = true;
-  }
 }
 
 function saveCurrentLink() {
@@ -93,42 +78,6 @@ function saveCurrentLink() {
 
   localStorage.removeItem(methods[currentMethod].storageKey);
   statusPill.textContent = "待配置";
-}
-
-async function loadSkinSources() {
-  try {
-    const response = await fetch(apiUrl("/api/skin-assets"));
-    if (!response.ok) {
-      return;
-    }
-    const data = await response.json();
-    if (!data.ok || !Array.isArray(data.sources)) {
-      return;
-    }
-    skinSources = data.sources;
-
-    // 填入下拉框
-    sourcePicker.innerHTML = '<option value="">自动选择（按关键词匹配）</option>' +
-      skinSources
-        .map((item) => `<option value="${escapeHtml(item.file)}">${escapeHtml(item.file)} (${item.width}x${item.height})</option>`)
-        .join("");
-  } catch (error) {
-    console.warn("加载源图失败：", error.message);
-  }
-}
-
-function refreshSourcePreview() {
-  const selected = sourcePicker.value;
-  if (!selected) {
-    sourcePreview.src = "";
-    sourcePreview.alt = "未选择源图（将自动按关键词匹配）";
-    return;
-  }
-  const item = skinSources.find((s) => s.file === selected);
-  if (item) {
-    sourcePreview.src = item.url;
-    sourcePreview.alt = `兜兜源图 ${item.file}`;
-  }
 }
 
 function buildResult({ prompt, count, methodLink, remoteResult }) {
@@ -193,13 +142,6 @@ function escapeHtml(value) {
 function formatRemoteResult(data) {
   if (data?.type === "doudou-ip-skin-designer" && data.plan) {
     const imageGallery = formatImageGallery(data.openaiImage?.images);
-    const sourceBlock = data.source ? `
-      <div class="skin-section">
-        <b>使用的源图</b>
-        <p>${escapeHtml(data.source.file)}（${data.source.width}x${data.source.height}）</p>
-        ${data.source.dataUrl ? `<img class="source-thumb" src="${escapeHtml(data.source.dataUrl)}" alt="${escapeHtml(data.source.file)}" />` : ""}
-      </div>
-    ` : "";
 
     return `
       <div class="skin-result">
@@ -210,7 +152,6 @@ function formatRemoteResult(data) {
           <span>创意空间：${escapeHtml(data.plan.creativeSpace)}</span>
           <span>${escapeHtml(data.plan.palette)}</span>
         </div>
-        ${sourceBlock}
         <div class="skin-section">
           <b>身份锁定（不可改）</b>
           <ul>${data.plan.lockedAreas.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
@@ -422,8 +363,7 @@ async function callGenerator(payload) {
         input: {
           prompt: payload.prompt,
           count: Number(payload.count) || 1,
-          size: "1024x1024",
-          sourceFile: payload.sourceFile || undefined
+          size: "1024x1024"
         }
       })
     });
@@ -463,8 +403,6 @@ saveLinkButton.addEventListener("click", saveCurrentLink);
 
 methodLinkInput.addEventListener("change", saveCurrentLink);
 
-sourcePicker.addEventListener("change", refreshSourcePreview);
-
 generatorForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   saveCurrentLink();
@@ -473,8 +411,7 @@ generatorForm.addEventListener("submit", async (event) => {
   const payload = {
     prompt: (formData.get("prompt") || "").trim(),
     count: formData.get("count"),
-    methodLink: (formData.get("methodLink") || "").trim(),
-    sourceFile: (formData.get("sourceFile") || "").trim()
+    methodLink: (formData.get("methodLink") || "").trim()
   };
 
   resultContent.innerHTML = `
@@ -528,4 +465,3 @@ resetButton.addEventListener("click", () => {
 });
 
 setMethod(currentMethod);
-loadSkinSources();
